@@ -14,6 +14,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+
+type BackgroundOption = "transparent" | "white" | "black" | "custom";
+
+const backgroundOptions: { key: BackgroundOption; label: string; description: string; color?: string }[] = [
+  { key: "transparent", label: "Şeffaf", description: "PNG ile alfa kanallı indirin" },
+  { key: "white", label: "Beyaz", description: "JPG için temiz beyaz zemin", color: "#ffffff" },
+  { key: "black", label: "Siyah", description: "JPG için koyu zemin", color: "#000000" },
+  { key: "custom", label: "Özel", description: "Marka rengi seç", color: "#5b21b6" },
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 type BackgroundOption = "transparent" | "white" | "black" | "custom" | "blur";
@@ -39,6 +48,7 @@ export default function HomePage() {
   const [isExporting, setIsExporting] = useState(false);
   const [background, setBackground] = useState<BackgroundOption>("transparent");
   const [customColor, setCustomColor] = useState("#5b21b6");
+  const [quality, setQuality] = useState(92);
 
   useEffect(() => {
     return () => {
@@ -82,11 +92,14 @@ export default function HomePage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      const response = await fetch(`${API_BASE_URL}/api/background/remove?output=png`, {
       const response = await fetch(`${API_BASE_URL}/api/remove-bg`, {
         method: "POST",
         body: formData,
       });
       if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "İşlem başarısız." }));
+        throw new Error(error.error || "İşlem sırasında hata oluştu.");
         const error = await response.json().catch(() => ({ detail: "İşlem başarısız." }));
         throw new Error(error.detail || "İşlem sırasında hata oluştu.");
       }
@@ -118,6 +131,11 @@ export default function HomePage() {
     downloadBlob(resultBlob, "cleancut.png");
   };
 
+  const getSelectedColor = () => {
+    const preset = backgroundOptions.find((opt) => opt.key === background)?.color;
+    return background === "custom" ? customColor : preset ?? "#ffffff";
+  };
+
   const handleExport = async (format: "jpeg" | "png") => {
     if (!resultBlob) {
       callToast("Henüz çıktı yok", "Lütfen önce arka planı temizleyin.");
@@ -127,6 +145,14 @@ export default function HomePage() {
     try {
       const formData = new FormData();
       formData.append("file", resultBlob, "output.png");
+      const params = new URLSearchParams();
+      params.set("output", format === "jpeg" ? "jpg" : "png");
+      if (format === "jpeg") {
+        params.set("bgColor", getSelectedColor());
+        params.set("quality", quality.toString());
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/background/remove?${params.toString()}`, {
       formData.append("background", background);
       formData.append("output_format", format);
       if (background === "custom") {
@@ -137,6 +163,8 @@ export default function HomePage() {
         body: formData,
       });
       if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Dışa aktarım başarısız." }));
+        throw new Error(error.error || "Dışa aktarım sırasında hata oluştu.");
         const error = await response.json().catch(() => ({ detail: "Dışa aktarım başarısız." }));
         throw new Error(error.detail || "Dışa aktarım sırasında hata oluştu.");
       }
@@ -223,6 +251,9 @@ export default function HomePage() {
               </div>
               {background === "custom" && (
                 <div className="flex items-center gap-3">
+                  <Label htmlFor="customColor" className="text-sm">
+                    Renk
+                  </Label>
                   <Label htmlFor="customColor" className="text-sm">Renk</Label>
                   <Input
                     id="customColor"
@@ -239,6 +270,20 @@ export default function HomePage() {
                   />
                 </div>
               )}
+              <div>
+                <Label htmlFor="quality" className="text-sm">
+                  JPG kalite ({quality})
+                </Label>
+                <input
+                  id="quality"
+                  type="range"
+                  min={50}
+                  max={100}
+                  value={quality}
+                  onChange={(e) => setQuality(Number(e.target.value))}
+                  className="mt-2 w-full"
+                />
+              </div>
               <div className="flex flex-wrap gap-3">
                 <Button onClick={handleDownloadPng} disabled={isProcessing || !resultBlob}>
                   Şeffaf PNG indir

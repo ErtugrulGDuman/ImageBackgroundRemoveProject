@@ -4,7 +4,6 @@ node_modules
 .next
 out
 pnpm-lock.yaml.save
-
 # Python
 __pycache__
 *.pyc
