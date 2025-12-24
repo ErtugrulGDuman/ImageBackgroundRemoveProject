@@ -1,0 +1,35 @@
+# Node
+node_modules
+.pnpm-store
+.next
+out
+pnpm-lock.yaml.save
+package-lock.json
+
+# Dotnet
+**/bin/
+**/obj/
+*.user
+*.suo
+*.rsuser
+*.sln.docstates
+
+# Models
+**/Models/*.onnx
+
+# Python
+__pycache__
+*.pyc
+.env
+.venv
+
+# OS
+.DS_Store
+
+# Build artifacts
+coverage
+pytest_cache
+
+# Editor
+.vscode
+.idea
