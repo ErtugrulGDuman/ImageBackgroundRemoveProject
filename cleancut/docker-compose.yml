@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    env_file:
+      - .env.example
+    environment:
+      - CLEANCUT_ALLOWED_ORIGINS=${CLEANCUT_ALLOWED_ORIGINS:-http://localhost:3000}
+      - CLEANCUT_RATE_LIMIT=${CLEANCUT_RATE_LIMIT:-30}
+      - CLEANCUT_REMBG_MODEL=${CLEANCUT_REMBG_MODEL:-u2net}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    env_file:
+      - .env.example
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
