@@ -1,0 +1,4 @@
+line-length = 100
+extend-select = ["B","I","C4","UP","W","F"]
+ignore = ["B008"]
+target-version = "py311"

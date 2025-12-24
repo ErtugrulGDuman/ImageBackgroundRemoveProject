@@ -23,6 +23,16 @@ const backgroundOptions: { key: BackgroundOption; label: string; description: st
   { key: "white", label: "Beyaz", description: "JPG için temiz beyaz zemin", color: "#ffffff" },
   { key: "black", label: "Siyah", description: "JPG için koyu zemin", color: "#000000" },
   { key: "custom", label: "Özel", description: "Marka rengi seç", color: "#5b21b6" },
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+type BackgroundOption = "transparent" | "white" | "black" | "custom" | "blur";
+
+const backgroundOptions: { key: BackgroundOption; label: string; description: string }[] = [
+  { key: "transparent", label: "Şeffaf", description: "PNG ile alfa kanalını koru" },
+  { key: "white", label: "Beyaz", description: "Temiz bir beyaz zemin" },
+  { key: "black", label: "Siyah", description: "Kontrastlı koyu zemin" },
+  { key: "custom", label: "Özel", description: "Marka rengi seç" },
+  { key: "blur", label: "Blur", description: "Yumuşak bulanık arka plan" },
 ];
 
 const SAMPLE_BEFORE = "/sample-before.svg";
@@ -83,12 +93,15 @@ export default function HomePage() {
       const formData = new FormData();
       formData.append("file", file);
       const response = await fetch(`${API_BASE_URL}/api/background/remove?output=png`, {
+      const response = await fetch(`${API_BASE_URL}/api/remove-bg`, {
         method: "POST",
         body: formData,
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: "İşlem başarısız." }));
         throw new Error(error.error || "İşlem sırasında hata oluştu.");
+        const error = await response.json().catch(() => ({ detail: "İşlem başarısız." }));
+        throw new Error(error.detail || "İşlem sırasında hata oluştu.");
       }
       const blob = await response.blob();
       setResultBlob(blob);
@@ -140,12 +153,20 @@ export default function HomePage() {
       }
 
       const response = await fetch(`${API_BASE_URL}/api/background/remove?${params.toString()}`, {
+      formData.append("background", background);
+      formData.append("output_format", format);
+      if (background === "custom") {
+        formData.append("color", customColor);
+      }
+      const response = await fetch(`${API_BASE_URL}/api/export`, {
         method: "POST",
         body: formData,
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: "Dışa aktarım başarısız." }));
         throw new Error(error.error || "Dışa aktarım sırasında hata oluştu.");
+        const error = await response.json().catch(() => ({ detail: "Dışa aktarım başarısız." }));
+        throw new Error(error.detail || "Dışa aktarım sırasında hata oluştu.");
       }
       const blob = await response.blob();
       const extension = format === "png" ? "png" : "jpg";
@@ -233,6 +254,7 @@ export default function HomePage() {
                   <Label htmlFor="customColor" className="text-sm">
                     Renk
                   </Label>
+                  <Label htmlFor="customColor" className="text-sm">Renk</Label>
                   <Input
                     id="customColor"
                     type="color"
