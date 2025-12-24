@@ -1,0 +1,23 @@
+# Node
+node_modules
+.pnpm-store
+.next
+out
+pnpm-lock.yaml.save
+
+# Python
+__pycache__
+*.pyc
+.env
+.venv
+
+# OS
+.DS_Store
+
+# Build artifacts
+coverage
+pytest_cache
+
+# Editor
+.vscode
+.idea
